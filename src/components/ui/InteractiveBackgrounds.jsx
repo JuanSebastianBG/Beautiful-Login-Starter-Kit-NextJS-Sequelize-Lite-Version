@@ -7,7 +7,7 @@ import { OrbitalParticlesBackground } from './SolarSystem';
 import { PulsatingCirclesBackground } from './CirclesPoint';
 import { PerlinNoiseBackground } from './PerlinNoise';
 import { ConstellationsBackground } from './StelarContelations';
-import { InteractiveFluidBackground } from './LiquidBackground';
+import { LiquidBackground } from './LiquidBackground';
 import { ElasticLogoBackground } from './ElasticText';
 import { AuroraBackground } from './AuroraBackground';
 import { BlurryParticlesBackground } from './BlurryParticlesBackground';
@@ -26,7 +26,7 @@ export {
   PulsatingCirclesBackground,
   PerlinNoiseBackground,
   ConstellationsBackground,
-  InteractiveFluidBackground,
+  LiquidBackground,
   StarryNightBackground,
   ElasticLogoBackground,
   AuroraBackground,
@@ -45,7 +45,7 @@ export default {
   PulsatingCirclesBackground,
   PerlinNoiseBackground,
   ConstellationsBackground,
-  InteractiveFluidBackground,
+  LiquidBackground,
   StarryNightBackground,
   ElasticLogoBackground,
   AuroraBackground,

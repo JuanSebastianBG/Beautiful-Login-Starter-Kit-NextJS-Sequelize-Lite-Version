@@ -68,7 +68,7 @@ export default function Home() {
           case "Constellations":
             return <InteractiveBg.ConstellationsBackground />;
           case "Interactive Fluid":
-            return <InteractiveBg.InteractiveFluidBackground />;
+            return <InteractiveBg.LiquidBackground />;
           case "Elastic Logo":
             return <InteractiveBg.ElasticLogoBackground />;
           case "Aurora":
