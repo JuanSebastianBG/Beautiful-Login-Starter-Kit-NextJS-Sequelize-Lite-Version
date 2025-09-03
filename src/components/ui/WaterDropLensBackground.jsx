@@ -1,34 +1,41 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { getRandomColor, getColorVariant, BaseBackground } from "./utils";
 
-// Fondo de Lupa de Gota de Agua Mejorado
+// Fondo de Lupa de Gota de Agua Súper Optimizado y Mejorado
 const WaterDropLensBackground = ({ isDark = false }) => {
   const canvasRef = useRef(null);
-  const offscreenCanvasRef = useRef(null);
+  const backgroundCanvasRef = useRef(null);
   const animationFrameRef = useRef();
   const [mousePos, setMousePos] = useState({ x: -100, y: -100 });
   const dotsRef = useRef([]);
   const dripsRef = useRef([]);
   const lastMouseUpdateRef = useRef(0);
+  const isVisibleRef = useRef(true);
+  const backgroundNeedsUpdateRef = useRef(true);
 
-  // Inicializar puntos con mejor distribución
+  // Inicializar puntos optimizado
   const initializeDots = useCallback(() => {
     if (typeof window === "undefined") return [];
 
-    const numDots = Math.min(300, Math.floor((window.innerWidth * window.innerHeight) / 8000));
+    const density = Math.min(200, Math.floor((window.innerWidth * window.innerHeight) / 10000));
     const newDots = [];
 
-    for (let i = 0; i < numDots; i++) {
+    for (let i = 0; i < density; i++) {
       newDots.push({
         x: Math.random() * window.innerWidth,
         y: Math.random() * window.innerHeight,
-        radius: Math.random() * 4 + 1,
+        radius: Math.random() * 3 + 1.5,
         color: getRandomColor(),
-        opacity: Math.random() * 0.6 + 0.2,
-        pulseSpeed: 0.5 + Math.random() * 1.5,
+        opacity: Math.random() * 0.4 + 0.3,
+        pulseSpeed: 0.3 + Math.random() * 0.8,
         phase: Math.random() * Math.PI * 2,
+        baseRadius: 0,
       });
     }
+
+    newDots.forEach(dot => {
+      dot.baseRadius = dot.radius;
+    });
 
     return newDots;
   }, []);
@@ -38,25 +45,33 @@ const WaterDropLensBackground = ({ isDark = false }) => {
 
     dotsRef.current = initializeDots();
     dripsRef.current = [];
+    backgroundNeedsUpdateRef.current = true;
 
     const handleResize = () => {
       dotsRef.current = initializeDots();
+      backgroundNeedsUpdateRef.current = true;
     };
 
     const handleMouseMove = (e) => {
       const now = Date.now();
-      if (now - lastMouseUpdateRef.current > 16) {
+      if (now - lastMouseUpdateRef.current > 20) {
         setMousePos({ x: e.clientX, y: e.clientY });
         lastMouseUpdateRef.current = now;
       }
     };
 
+    const handleVisibilityChange = () => {
+      isVisibleRef.current = !document.hidden;
+    };
+
     window.addEventListener("resize", handleResize);
     window.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       cancelAnimationFrame(animationFrameRef.current);
     };
   }, [initializeDots]);
@@ -67,145 +82,202 @@ const WaterDropLensBackground = ({ isDark = false }) => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     
-    // Crear offscreen canvas una sola vez
-    if (!offscreenCanvasRef.current) {
-      offscreenCanvasRef.current = document.createElement("canvas");
+    // Canvas de fondo estático
+    if (!backgroundCanvasRef.current) {
+      backgroundCanvasRef.current = document.createElement("canvas");
     }
-    const offscreenCanvas = offscreenCanvasRef.current;
-    const offscreenCtx = offscreenCanvas.getContext("2d");
+    const bgCanvas = backgroundCanvasRef.current;
+    const bgCtx = bgCanvas.getContext("2d");
 
     const resizeCanvas = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-      offscreenCanvas.width = canvas.width;
-      offscreenCanvas.height = canvas.height;
+      bgCanvas.width = canvas.width;
+      bgCanvas.height = canvas.height;
+      backgroundNeedsUpdateRef.current = true;
     };
 
     resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
 
-    const dropRadius = 80;
-    const magnification = 1.8;
+    const dropRadius = 70;
+    const magnification = 2.2;
+    let frameCount = 0;
 
     const animate = () => {
-      // Dibujar fondo en offscreen canvas
-      offscreenCtx.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
-      offscreenCtx.filter = "blur(1px)";
+      if (!isVisibleRef.current) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+        return;
+      }
 
-      // Dibujar puntos con pulsación
-      dotsRef.current.forEach((dot) => {
-        const pulse = Math.sin(Date.now() * 0.001 * dot.pulseSpeed + dot.phase);
-        const currentRadius = dot.radius * (1 + pulse * 0.3);
+      frameCount++;
+      const currentTime = Date.now() * 0.001;
+
+      // Actualizar fondo solo cuando sea necesario
+      if (backgroundNeedsUpdateRef.current || frameCount % 3 === 0) {
+        bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
         
-        const gradient = offscreenCtx.createRadialGradient(
-          dot.x, dot.y, 0,
-          dot.x, dot.y, currentRadius * 2
-        );
-        gradient.addColorStop(0, getColorVariant(dot.color, isDark ? "400" : "300") + "FF");
-        gradient.addColorStop(1, getColorVariant(dot.color, isDark ? "600" : "500") + "00");
+        // Dibujar puntos con pulsación optimizada
+        dotsRef.current.forEach((dot) => {
+          const pulse = Math.sin(currentTime * dot.pulseSpeed + dot.phase) * 0.2 + 1;
+          dot.radius = dot.baseRadius * pulse;
+          
+          const gradient = bgCtx.createRadialGradient(
+            dot.x, dot.y, 0,
+            dot.x, dot.y, dot.radius * 2.5
+          );
+          
+          const color = getColorVariant(dot.color, isDark ? "300" : "400");
+          gradient.addColorStop(0, color + "CC");
+          gradient.addColorStop(0.7, color + "44");
+          gradient.addColorStop(1, color + "00");
 
-        offscreenCtx.beginPath();
-        offscreenCtx.arc(dot.x, dot.y, currentRadius, 0, Math.PI * 2);
-        offscreenCtx.fillStyle = gradient;
-        offscreenCtx.globalAlpha = dot.opacity;
-        offscreenCtx.fill();
-      });
+          bgCtx.beginPath();
+          bgCtx.arc(dot.x, dot.y, dot.radius * 2, 0, Math.PI * 2);
+          bgCtx.fillStyle = gradient;
+          bgCtx.fill();
+        });
+        
+        backgroundNeedsUpdateRef.current = false;
+      }
 
-      offscreenCtx.filter = "none";
-      offscreenCtx.globalAlpha = 1;
-
-      // Copiar a canvas principal
+      // Copiar fondo al canvas principal
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(offscreenCanvas, 0, 0);
+      ctx.drawImage(bgCanvas, 0, 0);
 
-      // Dibujar gota de agua mejorada
+      // Dibujar gota de agua mejorada y más realista
       if (mousePos.x >= 0 && mousePos.y >= 0) {
-        const dripOffset = Math.sin(Date.now() / 300) * 3;
-        
+        const wobble = Math.sin(currentTime * 3) * 2;
+        const dripLength = 20 + Math.abs(Math.sin(currentTime * 2)) * 8;
+
+        // Definir parámetros de la forma de lágrima más realista
+        const baseWidth = dropRadius * 0.7;
+        const totalHeight = dropRadius * 1.5 + dripLength;
+        const dropX = mousePos.x + wobble * 0.5;
+        const dropTop = mousePos.y - dropRadius * 0.6;
+        const dropBottom = dropTop + totalHeight;
+        const dropMid = dropTop + totalHeight * 0.55; // Ligeramente sesgado para bulbo superior
+
+        // Crear máscara de gota con curvas bezier para forma de lágrima
         ctx.save();
-        
-        // Crear forma de gota más realista
         ctx.beginPath();
-        ctx.arc(mousePos.x, mousePos.y, dropRadius, 0, Math.PI * 2);
-        
-        // Goteo inferior
-        const dripHeight = 15 + Math.abs(dripOffset);
-        ctx.ellipse(
-          mousePos.x, 
-          mousePos.y + dropRadius + dripHeight/2, 
-          dropRadius * 0.3, 
-          dripHeight, 
-          0, 0, Math.PI * 2
-        );
-        
+        ctx.moveTo(dropX, dropBottom); // Punta inferior
+        ctx.quadraticCurveTo(dropX - baseWidth, dropBottom, dropX - baseWidth, dropMid); // Lado izquierdo inferior
+        ctx.quadraticCurveTo(dropX - baseWidth, dropTop, dropX, dropTop); // Lado izquierdo superior a la cima
+        ctx.quadraticCurveTo(dropX + baseWidth, dropTop, dropX + baseWidth, dropMid); // Lado derecho superior a medio
+        ctx.quadraticCurveTo(dropX + baseWidth, dropBottom, dropX, dropBottom); // Lado derecho inferior a punta
+        ctx.closePath();
         ctx.clip();
 
-        // Dibujar contenido magnificado
-        const zoomWidth = dropRadius * 2 / magnification;
-        const zoomHeight = (dropRadius + dripHeight) * 2 / magnification;
-        
+        // Contenido magnificado con efecto de refracción sutil (filtro)
+        const sourceWidth = (baseWidth * 2) / magnification;
+        const sourceHeight = totalHeight / magnification;
+        const targetWidth = baseWidth * 2;
+        const targetHeight = totalHeight;
+
+        ctx.filter = 'contrast(1.2) brightness(1.1) saturate(1.2)';
         ctx.drawImage(
-          offscreenCanvas,
-          mousePos.x - zoomWidth / 2,
-          mousePos.y - zoomWidth / 2,
-          zoomWidth,
-          zoomHeight,
-          mousePos.x - dropRadius,
-          mousePos.y - dropRadius,
-          dropRadius * 2,
-          (dropRadius + dripHeight) * 2
+          bgCanvas,
+          mousePos.x - sourceWidth / 2,
+          mousePos.y - sourceHeight / 2,
+          sourceWidth,
+          sourceHeight,
+          dropX - baseWidth,
+          dropTop,
+          targetWidth,
+          targetHeight
         );
+        ctx.filter = 'none';
 
         ctx.restore();
 
-        // Borde de la gota con efecto de refracción
-        const gradient = ctx.createRadialGradient(
-          mousePos.x, mousePos.y, dropRadius * 0.8,
-          mousePos.x, mousePos.y, dropRadius * 1.2
+        // Borde de la gota con efecto 3D mejorado
+        const borderGradient = ctx.createRadialGradient(
+          dropX - baseWidth * 0.3, dropTop + totalHeight * 0.2, 0,
+          dropX, mousePos.y, baseWidth * 1.1
         );
-        gradient.addColorStop(0, "rgba(255, 255, 255, 0)");
-        gradient.addColorStop(1, isDark ? "rgba(200, 230, 255, 0.6)" : "rgba(0, 100, 200, 0.4)");
+        
+        if (isDark) {
+          borderGradient.addColorStop(0, "rgba(200, 240, 255, 0.95)");
+          borderGradient.addColorStop(0.6, "rgba(100, 200, 255, 0.7)");
+          borderGradient.addColorStop(1, "rgba(50, 150, 255, 0.4)");
+        } else {
+          borderGradient.addColorStop(0, "rgba(255, 255, 255, 0.95)");
+          borderGradient.addColorStop(0.6, "rgba(0, 150, 255, 0.6)");
+          borderGradient.addColorStop(1, "rgba(0, 100, 200, 0.4)");
+        }
 
         ctx.beginPath();
-        ctx.arc(mousePos.x, mousePos.y, dropRadius, 0, Math.PI * 2);
-        ctx.ellipse(
-          mousePos.x, 
-          mousePos.y + dropRadius + (15 + Math.abs(dripOffset))/2, 
-          dropRadius * 0.3, 
-          15 + Math.abs(dripOffset), 
-          0, 0, Math.PI * 2
-        );
-        ctx.strokeStyle = gradient;
-        ctx.lineWidth = 2;
+        ctx.moveTo(dropX, dropBottom);
+        ctx.quadraticCurveTo(dropX - baseWidth, dropBottom, dropX - baseWidth, dropMid);
+        ctx.quadraticCurveTo(dropX - baseWidth, dropTop, dropX, dropTop);
+        ctx.quadraticCurveTo(dropX + baseWidth, dropTop, dropX + baseWidth, dropMid);
+        ctx.quadraticCurveTo(dropX + baseWidth, dropBottom, dropX, dropBottom);
+        ctx.closePath();
+        ctx.strokeStyle = borderGradient;
+        ctx.lineWidth = 2.5;
         ctx.stroke();
 
+        // Brillo superior mejorado
+        const highlightGradient = ctx.createRadialGradient(
+          dropX - baseWidth * 0.4, dropTop + totalHeight * 0.15, 0,
+          dropX - baseWidth * 0.4, dropTop + totalHeight * 0.15, baseWidth * 0.6
+        );
+        highlightGradient.addColorStop(0, "rgba(255, 255, 255, 0.85)");
+        highlightGradient.addColorStop(1, "rgba(255, 255, 255, 0)");
+        
+        ctx.beginPath();
+        ctx.arc(dropX - baseWidth * 0.4, dropTop + totalHeight * 0.15, baseWidth * 0.3, 0, Math.PI * 2);
+        ctx.fillStyle = highlightGradient;
+        ctx.fill();
+
+        // Brillo inferior pequeño para realismo
+        const bottomHighlightGradient = ctx.createRadialGradient(
+          dropX, dropBottom - totalHeight * 0.3, 0,
+          dropX, dropBottom - totalHeight * 0.3, baseWidth * 0.3
+        );
+        bottomHighlightGradient.addColorStop(0, "rgba(255, 255, 255, 0.6)");
+        bottomHighlightGradient.addColorStop(1, "rgba(255, 255, 255, 0)");
+        
+        ctx.beginPath();
+        ctx.arc(dropX, dropBottom - totalHeight * 0.3, baseWidth * 0.15, 0, Math.PI * 2);
+        ctx.fillStyle = bottomHighlightGradient;
+        ctx.fill();
+
         // Generar gotas ocasionalmente
-        if (Math.random() < 0.03) {
+        if (Math.random() < 0.02 && dripsRef.current.length < 5) {
           dripsRef.current.push({
-            x: mousePos.x + (Math.random() - 0.5) * dropRadius * 0.5,
-            y: mousePos.y + dropRadius + 15,
-            vy: Math.random() * 1 + 0.5,
-            radius: Math.random() * 3 + 1,
-            color: getColorVariant("blue", isDark ? "300" : "500"),
-            life: 120,
-            opacity: 0.8,
+            x: dropX + (Math.random() - 0.5) * baseWidth * 0.1,
+            y: dropBottom,
+            vy: Math.random() * 0.5 + 0.3,
+            radius: Math.random() * 2 + 1,
+            color: getColorVariant("blue", isDark ? "200" : "600"),
+            life: 180,
+            opacity: 0.9,
           });
         }
       }
 
-      // Actualizar y dibujar gotas
+      // Actualizar y dibujar gotas cayendo
       dripsRef.current = dripsRef.current.map((drip) => {
         drip.y += drip.vy;
-        drip.vy += 0.03; // Gravedad
+        drip.vy += 0.02; // Gravedad
         drip.life -= 1;
-        drip.opacity = drip.life / 120;
+        drip.opacity = Math.max(0, drip.life / 180);
         return drip;
-      }).filter((drip) => drip.life > 0 && drip.y < canvas.height + 50);
+      }).filter((drip) => drip.life > 0 && drip.y < canvas.height + 20);
 
       dripsRef.current.forEach((drip) => {
+        const gradient = ctx.createRadialGradient(
+          drip.x, drip.y, 0,
+          drip.x, drip.y, drip.radius * 2
+        );
+        gradient.addColorStop(0, drip.color + "FF");
+        gradient.addColorStop(1, drip.color + "00");
+        
         ctx.beginPath();
         ctx.arc(drip.x, drip.y, drip.radius, 0, Math.PI * 2);
-        ctx.fillStyle = drip.color;
+        ctx.fillStyle = gradient;
         ctx.globalAlpha = drip.opacity;
         ctx.fill();
       });
@@ -227,8 +299,8 @@ const WaterDropLensBackground = ({ isDark = false }) => {
       isDark={isDark}
       gradient={
         isDark
-          ? "from-blue-900 via-cyan-900 to-teal-900"
-          : "from-cyan-50 via-blue-50 to-teal-50"
+          ? "from-cyan-900 via-blue-900 to-indigo-900"
+          : "from-cyan-50 via-blue-50 to-indigo-50"
       }
     >
       <canvas

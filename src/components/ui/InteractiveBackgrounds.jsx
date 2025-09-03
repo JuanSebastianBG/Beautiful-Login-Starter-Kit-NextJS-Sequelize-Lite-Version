@@ -10,11 +10,10 @@ import { ConstellationsBackground } from './StelarContelations';
 import { InteractiveFluidBackground } from './LiquidBackground';
 import { ElasticLogoBackground } from './ElasticText';
 import { AuroraBackground } from './AuroraBackground';
-import { FlowingFlowersBackground } from './FlowingFlowersBackground';
 import { BlurryParticlesBackground } from './BlurryParticlesBackground';
 import { BlurryWavesBackground } from './BlurryWavesBackground';
 import { WaterDropLensBackground } from './WaterDropLensBackground'; 
-
+import { StarryNightBackground } from './StarryNightBackground';
 // Exportar todos los componentes
 export {
   BlurryParticlesBackground,  
@@ -28,9 +27,9 @@ export {
   PerlinNoiseBackground,
   ConstellationsBackground,
   InteractiveFluidBackground,
+  StarryNightBackground,
   ElasticLogoBackground,
   AuroraBackground,
-  FlowingFlowersBackground,
   WaterDropLensBackground,
 };
 
@@ -47,8 +46,8 @@ export default {
   PerlinNoiseBackground,
   ConstellationsBackground,
   InteractiveFluidBackground,
+  StarryNightBackground,
   ElasticLogoBackground,
   AuroraBackground,
-  FlowingFlowersBackground,
   WaterDropLensBackground,
 };

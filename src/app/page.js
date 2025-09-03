@@ -20,11 +20,11 @@ export default function Home() {
       { name: "Blurry Particles", displayName: "Blurry Particles" },
       { name: "Blurry Waves", displayName: "Blurry Waves" },
       { name: "Pulsating Circles", displayName: "Pulsating Circles" },
+      { name: "Starry Night", displayName: "Starry Night" },
       { name: "Perlin Noise", displayName: "Organic Patterns" },
       { name: "Constellations", displayName: "Stellar Constellations" },
       { name: "Interactive Fluid", displayName: "Liquid Background" },
       { name: "Elastic Logo", displayName: "Elastic Text" },
-      { name: "Flowing Flowers", displayName: "Flowing Flowers" },
     ]
   }), []);
 
@@ -61,6 +61,8 @@ export default function Home() {
             return <InteractiveBg.BlurryWavesBackground />;
           case "Pulsating Circles":
             return <InteractiveBg.PulsatingCirclesBackground />;
+          case "Starry Night":
+            return <InteractiveBg.StarryNightBackground />;
           case "Perlin Noise":
             return <InteractiveBg.PerlinNoiseBackground />;
           case "Constellations":
@@ -71,8 +73,6 @@ export default function Home() {
             return <InteractiveBg.ElasticLogoBackground />;
           case "Aurora":
             return <InteractiveBg.AuroraBackground />;
-          case "Flowing Flowers":
-            return <InteractiveBg.FlowingFlowersBackground />;
           case "Blurry Particles":
             return <InteractiveBg.BlurryParticlesBackground />;
           default:
