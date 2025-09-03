@@ -1,12 +1,11 @@
 "use client";
-import Image from "next/image";
-import { useState, useMemo } from "react";
-import * as InteractiveBg from "../components/ui/InteractiveBackgrounds";// Asumiendo que existe este componente para los fondos originales
+import { useState, useMemo, useCallback } from "react";
+import * as InteractiveBg from "../components/ui/InteractiveBackgrounds";
 
 export default function Home() {
-  const [currentBackground, setCurrentBackground] = useState("Circles Light");
+  const [currentBackground, setCurrentBackground] = useState("Elastic Logo");
 
-  // Organized and optimized background options
+  // Optimized background categories
   const backgroundCategories = useMemo(() => ({
     "Interactive Backgrounds": [
       { name: "Physics Rope", displayName: "Interactive Ropes" },
@@ -15,105 +14,85 @@ export default function Home() {
       { name: "Node Network", displayName: "Network Physics" },
       { name: "Orbital Particles", displayName: "Solar System" },
       { name: "Aurora", displayName: "Aurora" },
+      { name: "Water Drop Lens", displayName: "Water Drop Lens" },
     ],
     "Advanced Effects": [
+      { name: "Blurry Particles", displayName: "Blurry Particles" },
+      { name: "Blurry Waves", displayName: "Blurry Waves" },
       { name: "Pulsating Circles", displayName: "Pulsating Circles" },
       { name: "Perlin Noise", displayName: "Organic Patterns" },
       { name: "Constellations", displayName: "Stellar Constellations" },
       { name: "Interactive Fluid", displayName: "Liquid Background" },
       { name: "Elastic Logo", displayName: "Elastic Text" },
       { name: "Flowing Flowers", displayName: "Flowing Flowers" },
-      { name: "Kaleidoscope", displayName: "Kaleidoscope" },
     ]
   }), []);
 
-  // Flatten all options for easy access
   const allBackgrounds = useMemo(() => 
     Object.values(backgroundCategories).flat()
   , [backgroundCategories]);
 
-  const handleBackgroundChange = (backgroundName) => {
+  const handleBackgroundChange = useCallback((backgroundName) => {
     setCurrentBackground(backgroundName);
-  };
+  }, []);
 
-  // Get current background info
-  const currentBgInfo = allBackgrounds.find(bg => bg.name === currentBackground);
+  const currentBgInfo = useMemo(() => 
+    allBackgrounds.find(bg => bg.name === currentBackground)
+  , [allBackgrounds, currentBackground]);
 
-  // Componente para renderizar el fondo seleccionado
-  const RenderBackground = () => {
-
-    // Nuevos fondos interactivos
-    switch (currentBackground) {
-      case "Physics Rope":
-        return <InteractiveBg.PhysicsRopeBackground />;
-      case "Reactive Particles":
-        return <InteractiveBg.ReactiveParticlesBackground />;
-      case "Fluid Waves":
-        return <InteractiveBg.FluidWavesBackground />;
-      case "Node Network":
-        return <InteractiveBg.NetworkNodesBackground />;
-      case "Orbital Particles":
-        return <InteractiveBg.OrbitalParticlesBackground />;
-      case "Pulsating Circles":
-        return <InteractiveBg.PulsatingCirclesBackground />; // Corregido el nombre
-      case "Perlin Noise":
-        return <InteractiveBg.PerlinNoiseBackground />;
-      case "Constellations":
-        return <InteractiveBg.ConstellationsBackground />;
-      case "Interactive Fluid":
-        return <InteractiveBg.InteractiveFluidBackground />;
-      case "Elastic Logo":
-        return <InteractiveBg.ElasticLogoBackground />;
-      case "Aurora":
-        return <InteractiveBg.AuroraBackground />;
-      case "Flowing Flowers":
-        return <InteractiveBg.FlowingFlowersBackground />;
-      case "Kaleidoscope":
-        return <InteractiveBg.KaleidoscopeBackground />;
-      default:
-        return <InteractiveBg.ElasticLogoBackground />;
-    }
-  };
+  // Optimized background renderer with error boundaries
+  const RenderBackground = useMemo(() => {
+    const BackgroundComponent = () => {
+      try {
+        switch (currentBackground) {
+          case "Physics Rope":
+            return <InteractiveBg.PhysicsRopeBackground />;
+          case "Reactive Particles":
+            return <InteractiveBg.ReactiveParticlesBackground />;
+          case "Fluid Waves":
+            return <InteractiveBg.FluidWavesBackground />;
+          case "Node Network":
+            return <InteractiveBg.NetworkNodesBackground />;
+          case "Orbital Particles":
+            return <InteractiveBg.OrbitalParticlesBackground />;
+          case "Water Drop Lens":
+            return <InteractiveBg.WaterDropLensBackground />;
+          case "Blurry Waves":
+            return <InteractiveBg.BlurryWavesBackground />;
+          case "Pulsating Circles":
+            return <InteractiveBg.PulsatingCirclesBackground />;
+          case "Perlin Noise":
+            return <InteractiveBg.PerlinNoiseBackground />;
+          case "Constellations":
+            return <InteractiveBg.ConstellationsBackground />;
+          case "Interactive Fluid":
+            return <InteractiveBg.InteractiveFluidBackground />;
+          case "Elastic Logo":
+            return <InteractiveBg.ElasticLogoBackground />;
+          case "Aurora":
+            return <InteractiveBg.AuroraBackground />;
+          case "Flowing Flowers":
+            return <InteractiveBg.FlowingFlowersBackground />;
+          case "Blurry Particles":
+            return <InteractiveBg.BlurryParticlesBackground />;
+          default:
+            return <InteractiveBg.ElasticLogoBackground />;
+        }
+      } catch (error) {
+        console.error('Error rendering background:', error);
+        return <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-purple-50" />;
+      }
+    };
+    return BackgroundComponent;
+  }, [currentBackground]);
 
   return (
     <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-4 sm:p-8 pb-20 gap-8 sm:gap-16 relative">
-      {/* Renderizar el fondo seleccionado */}
       <RenderBackground />
       
-      {/* Main Content */}
+      {/* Resto del contenido optimizado... */}
       <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start z-10 relative">
-        {/* Logo */}
-        <div className="flex flex-col items-center sm:items-start">
-          <Image
-            className="dark:invert"
-            src="/next.svg"
-            alt="Next.js logo"
-            width={180}
-            height={38}
-            priority
-          />
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 text-center sm:text-left">
-            Enhanced Background Showcase
-          </p>
-        </div>
-        
-        {/* Instructions */}
-        <ol className="font-mono list-inside list-decimal text-sm leading-6 text-center sm:text-left max-w-md">
-          <li className="mb-2 tracking-tight">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded text-xs">
-              src/app/page.js
-            </code>
-          </li>
-          <li className="tracking-tight">
-            Save and see your changes instantly.
-          </li>
-          <li className="mt-2 tracking-tight text-purple-600 dark:text-purple-400">
-            Click backgrounds below to see the magic! ✨
-          </li>
-        </ol>
-
-        {/* Enhanced Background Selector */}
+        {/* Contenido simplificado para mejor rendimiento */}
         <div className="w-full max-w-5xl p-6 bg-white/30 backdrop-blur-md rounded-2xl border border-white/40 shadow-2xl">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-bold text-gray-800 dark:text-white">
@@ -125,7 +104,6 @@ export default function Home() {
             </div>
           </div>
           
-          {/* Categorized Background Options */}
           <div className="space-y-6">
             {Object.entries(backgroundCategories).map(([category, backgrounds]) => (
               <div key={category} className="space-y-3">
@@ -146,9 +124,6 @@ export default function Home() {
                       `}
                     >
                       {bg.displayName}
-                      {currentBackground === bg.name && (
-                        <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-white rounded-full animate-ping"></span>
-                      )}
                     </button>
                   ))}
                 </div>
@@ -157,70 +132,6 @@ export default function Home() {
           </div>
         </div>
       </main>
-
-      {/* Currently Displaying Info */}
-      <div className="fixed bottom-0 left-0 right-0 bg-gray-900/80 backdrop-blur-md text-white p-4 flex items-center justify-between z-20">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold">Currently Displaying:</span>
-          <span className="text-blue-300">{currentBgInfo?.displayName || currentBackground}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-          <span className="text-sm text-green-400">Live Preview</span>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <footer className="flex gap-8 text-sm row-start-3 z-10">
-        <a
-          className="group flex items-center gap-2 hover:underline hover:underline-offset-4 transition-all duration-300 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-            className="transition-transform group-hover:scale-110"
-          />
-          Learn
-        </a>
-        <a
-          className="group flex items-center gap-2 hover:underline hover:underline-offset-4 transition-all duration-300 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-            className="transition-transform group-hover:scale-110"
-          />
-          Examples
-        </a>
-        <a
-          className="group flex items-center gap-2 hover:underline hover:underline-offset-4 transition-all duration-300 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-            className="transition-transform group-hover:scale-110"
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }

@@ -1,54 +1,47 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { getRandomColor, getColorVariant, BaseBackground } from "./utils";
+import React, { useState, useEffect, useRef } from "react";
+import { BaseBackground } from "./utils";
 
-// 7. Perlin Noise (Patrones Orgánicos)
+// Fondo de Ondas Minimalistas - Más Visible y Vibrante
 const PerlinNoiseBackground = ({ isDark = false }) => {
   const canvasRef = useRef(null);
   const animationFrameRef = useRef();
-  const [mousePos, setMousePos] = useState({ x: -100, y: -100 });
-  const [time, setTime] = useState(0);
+  const mouseRef = useRef({ x: 0, y: 0 });
+  const timeRef = useRef(0);
+  const [isVisible, setIsVisible] = useState(true);
 
-  // Implementación simple de ruido Perlin
-  const noise = (x, y) => {
-    const X = Math.floor(x) & 255;
-    const Y = Math.floor(y) & 255;
-
-    const xf = x - Math.floor(x);
-    const yf = y - Math.floor(y);
-
-    const topRight = ((X + 1 + (Y + 1) * 57) % 256) / 255.0;
-    const topLeft = ((X + Y * 57) % 256) / 255.0;
-    const bottomRight = ((X + 1 + Y * 57) % 256) / 255.0;
-    const bottomLeft = ((X + (Y + 1) * 57) % 256) / 255.0;
-
-    const u = xf * xf * (3 - 2 * xf);
-
-    const lerp1 = topLeft + u * (topRight - topLeft);
-    const lerp2 = bottomLeft + u * (bottomRight - bottomLeft);
-
-    const v = yf * yf * (3 - 2 * yf);
-
-    return lerp1 + v * (lerp2 - lerp1);
-  };
+  // Throttled mouse tracking
+  const handleMouseMove = useRef(
+    (() => {
+      let timeout;
+      return (e) => {
+        if (timeout) return;
+        timeout = setTimeout(() => {
+          mouseRef.current = {
+            x: e.clientX / window.innerWidth,
+            y: e.clientY / window.innerHeight
+          };
+          timeout = null;
+        }, 16);
+      };
+    })()
+  ).current;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const handleMouseMove = (e) => {
-      setMousePos({ x: e.clientX, y: e.clientY });
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    
+    const handleVisibilityChange = () => {
+      setIsVisible(!document.hidden);
     };
-
-    window.addEventListener("mousemove", handleMouseMove);
-
-    // Incrementar el tiempo para la animación
-    const interval = setInterval(() => {
-      setTime((t) => t + 0.01);
-    }, 50);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
-      clearInterval(interval);
-      cancelAnimationFrame(animationFrameRef.current);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
     };
   }, []);
 
@@ -56,153 +49,170 @@ const PerlinNoiseBackground = ({ isDark = false }) => {
     if (!canvasRef.current || typeof window === "undefined") return;
 
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { alpha: false });
+    let width, height;
 
-    // Ajustar tamaño del canvas
     const handleResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
     };
 
     handleResize();
     window.addEventListener("resize", handleResize);
 
-    // Función de animación
+    // Colores más vibrantes y visibles
+    const colors = isDark ? {
+      primary: "rgba(99, 102, 241, 0.25)",    // Más opaco
+      secondary: "rgba(139, 92, 246, 0.22)", // Más opaco
+      accent: "rgba(59, 130, 246, 0.18)",    // Más opaco
+      base: "#0a0a1a",                       // Más oscuro para contraste
+      gradient1: "rgba(99, 102, 241, 0.08)",
+      gradient2: "rgba(139, 92, 246, 0.06)",
+      highlight: "rgba(168, 85, 247, 0.4)"
+    } : {
+      primary: "rgba(99, 102, 241, 0.18)",   // Más visible
+      secondary: "rgba(139, 92, 246, 0.15)", // Más visible
+      accent: "rgba(59, 130, 246, 0.12)",    // Más visible
+      base: "#f8fafc",                       // Más claro para contraste
+      gradient1: "rgba(99, 102, 241, 0.05)",
+      gradient2: "rgba(139, 92, 246, 0.04)",
+      highlight: "rgba(168, 85, 247, 0.2)"
+    };
+
     const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Crear imagen de datos para manipular píxeles directamente
-      const imageData = ctx.createImageData(canvas.width, canvas.height);
-      const data = imageData.data;
-
-      // Escala del ruido
-      const scale = 0.005;
-
-      // Colores base según el tema
-      const baseColors = isDark
-        ? [
-            [100, 50, 150], // Púrpura oscuro
-            [50, 50, 100], // Azul oscuro
-            [20, 20, 50], // Casi negro
-          ]
-        : [
-            [200, 220, 255], // Azul claro
-            [230, 230, 250], // Lavanda
-            [240, 240, 255], // Casi blanco
-          ];
-
-      // Influencia del mouse
-      const mouseInfluence = {
-        x: mousePos.x / canvas.width,
-        y: mousePos.y / canvas.height,
-      };
-
-      // Generar el patrón de ruido
-      for (let y = 0; y < canvas.height; y++) {
-        for (let x = 0; x < canvas.width; x++) {
-          // Calcular distancia al mouse
-          const dx = x - mousePos.x;
-          const dy = y - mousePos.y;
-          const distToMouse = Math.sqrt(dx * dx + dy * dy);
-          const mouseEffect = Math.max(0, 1 - distToMouse / 300);
-
-          // Generar múltiples capas de ruido
-          let noiseVal = 0;
-
-          // Primera capa - base
-          noiseVal += noise(x * scale, y * scale + time) * 0.5;
-
-          // Segunda capa - detalle
-          noiseVal += noise(x * scale * 2 + time, y * scale * 2) * 0.25;
-
-          // Tercera capa - más detalle
-          noiseVal +=
-            noise(x * scale * 4 + time * 0.5, y * scale * 4 - time * 0.5) *
-            0.125;
-
-          // Ajustar con la influencia del mouse
-          noiseVal += mouseEffect * 0.3;
-
-          // Limitar el valor
-          noiseVal = Math.max(0, Math.min(1, noiseVal));
-
-          // Interpolar entre colores base
-          let color;
-          if (noiseVal < 0.33) {
-            const t = noiseVal / 0.33;
-            color = [
-              baseColors[0][0] * (1 - t) + baseColors[1][0] * t,
-              baseColors[0][1] * (1 - t) + baseColors[1][1] * t,
-              baseColors[0][2] * (1 - t) + baseColors[1][2] * t,
-            ];
-          } else if (noiseVal < 0.66) {
-            const t = (noiseVal - 0.33) / 0.33;
-            color = [
-              baseColors[1][0] * (1 - t) + baseColors[2][0] * t,
-              baseColors[1][1] * (1 - t) + baseColors[2][1] * t,
-              baseColors[1][2] * (1 - t) + baseColors[2][2] * t,
-            ];
-          } else {
-            color = baseColors[2];
-          }
-
-          // Añadir efecto de color basado en la posición del mouse
-          if (mouseEffect > 0.1) {
-            const hue = (mouseInfluence.x * 360) % 360;
-            const saturation = 0.5 + mouseInfluence.y * 0.5;
-
-            // Convertir HSL a RGB
-            const c = saturation;
-            const x = c * (1 - Math.abs(((hue / 60) % 2) - 1));
-            const m = 0.5 - c / 2;
-
-            let r, g, b;
-            if (hue < 60) {
-              r = c;
-              g = x;
-              b = 0;
-            } else if (hue < 120) {
-              r = x;
-              g = c;
-              b = 0;
-            } else if (hue < 180) {
-              r = 0;
-              g = c;
-              b = x;
-            } else if (hue < 240) {
-              r = 0;
-              g = x;
-              b = c;
-            } else if (hue < 300) {
-              r = x;
-              g = 0;
-              b = c;
-            } else {
-              r = c;
-              g = 0;
-              b = x;
-            }
-
-            // Mezclar con el color base
-            color[0] =
-              color[0] * (1 - mouseEffect) + (r + m) * 255 * mouseEffect;
-            color[1] =
-              color[1] * (1 - mouseEffect) + (g + m) * 255 * mouseEffect;
-            color[2] =
-              color[2] * (1 - mouseEffect) + (b + m) * 255 * mouseEffect;
-          }
-
-          // Establecer el color del píxel
-          const pixelIndex = (y * canvas.width + x) * 4;
-          data[pixelIndex] = color[0];
-          data[pixelIndex + 1] = color[1];
-          data[pixelIndex + 2] = color[2];
-          data[pixelIndex + 3] = 255;
-        }
+      if (!isVisible) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+        return;
       }
 
-      // Dibujar la imagen
-      ctx.putImageData(imageData, 0, 0);
+      timeRef.current += 0.012; // Ligeramente más rápido
+      
+      // Fondo base
+      ctx.fillStyle = colors.base;
+      ctx.fillRect(0, 0, width, height);
+
+      // Gradiente base más visible
+      const baseGradient = ctx.createRadialGradient(
+        width * 0.3, height * 0.3, 0,
+        width * 0.7, height * 0.7, Math.max(width, height)
+      );
+      baseGradient.addColorStop(0, colors.gradient1);
+      baseGradient.addColorStop(0.5, colors.gradient2);
+      baseGradient.addColorStop(1, "transparent");
+      
+      ctx.fillStyle = baseGradient;
+      ctx.fillRect(0, 0, width, height);
+
+      // Ondas principales más prominentes
+      const waves = [
+        { 
+          amplitude: height * 0.2, // Más amplitud
+          frequency: 0.003, 
+          phase: timeRef.current * 0.6,
+          y: height * 0.25,
+          color: colors.primary,
+          thickness: 60
+        },
+        { 
+          amplitude: height * 0.18, 
+          frequency: 0.0025, 
+          phase: timeRef.current * 0.4 + Math.PI,
+          y: height * 0.5,
+          color: colors.secondary,
+          thickness: 80
+        },
+        { 
+          amplitude: height * 0.15, 
+          frequency: 0.004, 
+          phase: timeRef.current * 0.8 + Math.PI * 0.5,
+          y: height * 0.75,
+          color: colors.accent,
+          thickness: 50
+        }
+      ];
+
+      waves.forEach((wave, index) => {
+        ctx.beginPath();
+        
+        // Influencia más notable del mouse
+        const mouseInfluence = {
+          x: (mouseRef.current.x - 0.5) * 0.6, // Más influencia
+          y: (mouseRef.current.y - 0.5) * 0.4
+        };
+
+        for (let x = 0; x <= width; x += 1) { // Más detalle
+          const normalizedX = x / width;
+          
+          let y = wave.y;
+          y += Math.sin(x * wave.frequency + wave.phase) * wave.amplitude;
+          y += Math.sin(x * wave.frequency * 2 + wave.phase * 1.5) * wave.amplitude * 0.4;
+          y += Math.sin(x * wave.frequency * 0.5 + wave.phase * 0.8) * wave.amplitude * 0.6;
+          
+          // Más influencia del mouse
+          y += mouseInfluence.y * wave.amplitude * 0.4 * Math.sin(normalizedX * Math.PI);
+          y += mouseInfluence.x * wave.amplitude * 0.2 * Math.cos(normalizedX * Math.PI * 2);
+          
+          if (x === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+        
+        ctx.lineTo(width, height);
+        ctx.lineTo(0, height);
+        ctx.closePath();
+        
+        // Gradiente más intenso
+        const waveGradient = ctx.createLinearGradient(0, wave.y - wave.amplitude, 0, height);
+        waveGradient.addColorStop(0, wave.color);
+        waveGradient.addColorStop(0.3, wave.color.replace(/[\d\.]+\)$/, '0.1)'));
+        waveGradient.addColorStop(1, "transparent");
+        
+        ctx.fillStyle = waveGradient;
+        ctx.fill();
+
+        // Línea brillante más visible
+        ctx.beginPath();
+        for (let x = 0; x <= width; x += 2) {
+          const normalizedX = x / width;
+          let y = wave.y;
+          y += Math.sin(x * wave.frequency + wave.phase) * wave.amplitude;
+          y += Math.sin(x * wave.frequency * 2 + wave.phase * 1.5) * wave.amplitude * 0.4;
+          y += mouseInfluence.y * wave.amplitude * 0.4 * Math.sin(normalizedX * Math.PI);
+          
+          if (x === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+        
+        ctx.strokeStyle = colors.highlight;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      });
+
+      // Partículas más visibles
+      if (Math.random() < 0.05) {
+        const particleCount = 5;
+        for (let i = 0; i < particleCount; i++) {
+          const x = Math.random() * width;
+          const y = Math.random() * height;
+          const size = Math.random() * 3 + 2;
+          
+          const particleGradient = ctx.createRadialGradient(x, y, 0, x, y, size * 4);
+          particleGradient.addColorStop(0, isDark ? "rgba(255, 255, 255, 0.3)" : "rgba(99, 102, 241, 0.3)");
+          particleGradient.addColorStop(1, "transparent");
+          
+          ctx.beginPath();
+          ctx.arc(x, y, size, 0, Math.PI * 2);
+          ctx.fillStyle = particleGradient;
+          ctx.fill();
+        }
+      }
 
       animationFrameRef.current = requestAnimationFrame(animate);
     };
@@ -211,21 +221,23 @@ const PerlinNoiseBackground = ({ isDark = false }) => {
 
     return () => {
       window.removeEventListener("resize", handleResize);
-      cancelAnimationFrame(animationFrameRef.current);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
     };
-  }, [time, mousePos, isDark]);
+  }, [isDark, isVisible]);
 
   return (
-    <BaseBackground
-      isDark={isDark}
-      gradient={null} // No necesitamos gradiente aquí, el canvas lo cubre todo
-    >
+    <BaseBackground isDark={isDark} gradient={null}>
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 pointer-events-auto"
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: isDark ? '#0a0a1a' : '#f8fafc'
+        }}
       />
     </BaseBackground>
   );
 };
 
-export {PerlinNoiseBackground};
+export { PerlinNoiseBackground };

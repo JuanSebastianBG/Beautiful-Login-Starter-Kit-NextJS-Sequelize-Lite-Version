@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { getRandomColor, getColorVariant, BaseBackground } from "./utils";
 
-// 10. Texto o Logo Líquido/Elástico (Mejorado)
+// 10. Texto o Logo Líquido/Elástico (Optimizado)
 const ElasticLogoBackground = ({ isDark = false }) => {
   const canvasRef = useRef(null);
   const animationFrameRef = useRef();
   const [mousePos, setMousePos] = useState({ x: -100, y: -100 });
-  const pointsRef = useRef([]);  // Puntos como ref
+  const pointsRef = useRef([]);
   const [text] = useState("NEXT.JS");
+  const isInitializedRef = useRef(false);
 
-  // Inicializar puntos para el texto elástico - Ahora como partículas dentro del texto
+  // Inicializar puntos para el texto elástico - Optimizado
   const initializePoints = useCallback(() => {
     if (typeof window === "undefined") return [];
 
@@ -19,65 +20,51 @@ const ElasticLogoBackground = ({ isDark = false }) => {
     offscreenCanvas.width = window.innerWidth;
     offscreenCanvas.height = window.innerHeight;
 
-    // Configurar el texto
-    const fontSize = Math.min(window.innerWidth / 5, 200);  // Aumentado para mayor impacto visual
+    const fontSize = Math.min(window.innerWidth / 5, 200);
     offscreenCtx.font = `bold ${fontSize}px sans-serif`;
     offscreenCtx.textAlign = "center";
     offscreenCtx.textBaseline = "middle";
 
-    // Medir el texto
-    const textMetrics = offscreenCtx.measureText(text);
-    const textWidth = textMetrics.width;
-    const textHeight = fontSize;  // Aproximación
-
-    // Posición central
     const centerX = window.innerWidth / 2;
     const centerY = window.innerHeight / 2;
 
-    // Dibujar el texto en el offscreen canvas
     offscreenCtx.fillStyle = "white";
     offscreenCtx.fillText(text, centerX, centerY);
 
-    // Obtener datos de imagen
-    const imageData = offscreenCtx.getImageData(
-      centerX - textWidth / 2 - 20,
-      centerY - textHeight / 2 - 20,
-      textWidth + 40,
-      textHeight + 40
-    );
+    const imageData = offscreenCtx.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height);
+    const data = imageData.data;
+    const points = [];
 
-    // Crear puntos donde el píxel es opaco
-    const newPoints = [];
-    const spacing = 8;  // Espaciado para controlar el número de puntos (ajustado para rendimiento)
-    const areaWidth = textWidth + 40;
-    const areaHeight = textHeight + 40;
-    const offsetX = centerX - textWidth / 2 - 20;
-    const offsetY = centerY - textHeight / 2 - 20;
+    // Muestreo más eficiente
+    const step = 8;
+    for (let y = 0; y < offscreenCanvas.height; y += step) {
+      for (let x = 0; x < offscreenCanvas.width; x += step) {
+        const index = (y * offscreenCanvas.width + x) * 4;
+        const alpha = data[index + 3];
 
-    for (let y = 0; y < areaHeight; y += spacing) {
-      for (let x = 0; x < areaWidth; x += spacing) {
-        const index = (y * areaWidth + x) * 4 + 3;  // Canal alpha
-        if (imageData.data[index] > 128) {
-          const pointX = offsetX + x + (Math.random() - 0.5) * (spacing / 2);  // Jitter ligero
-          const pointY = offsetY + y + (Math.random() - 0.5) * (spacing / 2);
-          newPoints.push({
-            x: pointX,
-            y: pointY,
-            originX: pointX,
-            originY: pointY,
+        if (alpha > 128 && Math.random() < 0.3) {
+          points.push({
+            x,
+            y,
+            originalX: x,
+            originalY: y,
+            vx: 0,
+            vy: 0,
             color: getRandomColor(),
           });
         }
       }
     }
 
-    return newPoints;
-  }, [text]);
+    return points;
+  }, [text]); // Solo depende de text
 
+  // Inicialización única
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
+    if (typeof window === "undefined" || isInitializedRef.current) return;
+    
     pointsRef.current = initializePoints();
+    isInitializedRef.current = true;
 
     const handleResize = () => {
       pointsRef.current = initializePoints();
@@ -95,8 +82,9 @@ const ElasticLogoBackground = ({ isDark = false }) => {
       window.removeEventListener("mousemove", handleMouseMove);
       cancelAnimationFrame(animationFrameRef.current);
     };
-  }, [initializePoints]);
+  }, []); // Sin dependencias problemáticas
 
+  // Animación separada
   useEffect(() => {
     if (!canvasRef.current || typeof window === "undefined" || pointsRef.current.length === 0) return;
 
@@ -114,35 +102,39 @@ const ElasticLogoBackground = ({ isDark = false }) => {
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const points = pointsRef.current;  // Alias para simplicidad
+      const points = pointsRef.current;
 
-      // Actualizar puntos
-      pointsRef.current = points.map((point) => {
+      // Actualizar puntos sin modificar el array original
+      points.forEach((point) => {
         const dx = mousePos.x - point.x;
         const dy = mousePos.y - point.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
+        const maxDistance = 100;
 
-        let targetX = point.originX;
-        let targetY = point.originY;
-
-        if (distance < 300) {  // Aumentado radio de influencia para más interacción
-          const force = (300 - distance) / 300 * 1.2;  // Aumentada fuerza para efecto más pronunciado
-          targetX -= (dx / distance) * force * 50;  // Repulsión direccional más fuerte
-          targetY -= (dy / distance) * force * 50;
+        if (distance < maxDistance) {
+          const force = (maxDistance - distance) / maxDistance;
+          const angle = Math.atan2(dy, dx);
+          point.vx += Math.cos(angle) * force * 0.3;
+          point.vy += Math.sin(angle) * force * 0.3;
         }
 
-        const vx = (targetX - point.x) * 0.15;  // Aumentado coeficiente para respuesta más rápida
-        const vy = (targetY - point.y) * 0.15;
+        // Fuerza de retorno
+        const returnForceX = (point.originalX - point.x) * 0.05;
+        const returnForceY = (point.originalY - point.y) * 0.05;
+        point.vx += returnForceX;
+        point.vy += returnForceY;
 
-        return {
-          ...point,
-          x: point.x + vx,
-          y: point.y + vy,
-        };
+        // Aplicar fricción
+        point.vx *= 0.9;
+        point.vy *= 0.9;
+
+        // Actualizar posición
+        point.x += point.vx;
+        point.y += point.vy;
       });
 
-      // Dibujar conexiones entre puntos cercanos
-      ctx.strokeStyle = isDark ? "rgba(255, 255, 255, 0.3)" : "rgba(100, 100, 255, 0.4)";
+      // Dibujar conexiones
+      ctx.strokeStyle = isDark ? "rgba(255, 255, 255, 0.3)" : "rgba(0, 0, 0, 0.3)";
       ctx.lineWidth = 1;
 
       for (let i = 0; i < points.length; i++) {
@@ -153,31 +145,29 @@ const ElasticLogoBackground = ({ isDark = false }) => {
           const dy = p1.y - p2.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
 
-          if (dist < 40) {  // Umbral para conexiones
+          if (dist < 40) {
             ctx.beginPath();
             ctx.moveTo(p1.x, p1.y);
             ctx.lineTo(p2.x, p2.y);
-            ctx.globalAlpha = (40 - dist) / 40 * 0.6;  // Alpha ajustado para mejor visibilidad
+            ctx.globalAlpha = (40 - dist) / 40 * 0.6;
             ctx.stroke();
           }
         }
       }
 
-      // Reset alpha
       ctx.globalAlpha = 1;
 
       // Dibujar puntos
       points.forEach((point) => {
         ctx.beginPath();
-        ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);  // Aumentado radio para mejor visibilidad
-        ctx.fillStyle = getColorVariant(point.color, isDark ? "300" : "600");  // Colores más vibrantes
+        ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = getColorVariant(point.color, isDark ? "300" : "600");
         ctx.fill();
 
-        // Halo para efecto glow
         ctx.beginPath();
         ctx.arc(point.x, point.y, 8, 0, Math.PI * 2);
         ctx.fillStyle = getColorVariant(point.color, isDark ? "500" : "400");
-        ctx.globalAlpha = 0.4;  // Aumentado para más glow
+        ctx.globalAlpha = 0.4;
         ctx.fill();
       });
 
@@ -190,7 +180,7 @@ const ElasticLogoBackground = ({ isDark = false }) => {
       window.removeEventListener("resize", resizeCanvas);
       cancelAnimationFrame(animationFrameRef.current);
     };
-  }, [mousePos, text, isDark]);
+  }, [mousePos, isDark]); // Dependencias controladas
 
   return (
     <BaseBackground

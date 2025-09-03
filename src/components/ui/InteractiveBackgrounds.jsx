@@ -11,11 +11,14 @@ import { InteractiveFluidBackground } from './LiquidBackground';
 import { ElasticLogoBackground } from './ElasticText';
 import { AuroraBackground } from './AuroraBackground';
 import { FlowingFlowersBackground } from './FlowingFlowersBackground';
-import { KaleidoscopeBackground } from './KaleidoscopeBackground';
-
+import { BlurryParticlesBackground } from './BlurryParticlesBackground';
+import { BlurryWavesBackground } from './BlurryWavesBackground';
+import { WaterDropLensBackground } from './WaterDropLensBackground'; 
 
 // Exportar todos los componentes
 export {
+  BlurryParticlesBackground,  
+  BlurryWavesBackground,
   PhysicsRopeBackground,
   ReactiveParticlesBackground,
   FluidWavesBackground,
@@ -28,11 +31,13 @@ export {
   ElasticLogoBackground,
   AuroraBackground,
   FlowingFlowersBackground,
-  KaleidoscopeBackground,
+  WaterDropLensBackground,
 };
 
 // Exportación por defecto con todos los componentes
 export default {
+  BlurryParticlesBackground,
+  BlurryWavesBackground,
   PhysicsRopeBackground,
   ReactiveParticlesBackground,
   FluidWavesBackground,
@@ -45,5 +50,5 @@ export default {
   ElasticLogoBackground,
   AuroraBackground,
   FlowingFlowersBackground,
-  KaleidoscopeBackground,
+  WaterDropLensBackground,
 };

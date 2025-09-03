@@ -1,59 +1,83 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { getRandomColor, getColorVariant, BaseBackground } from "./utils";
 
-
-// 2. Partículas Reactivas
+// Partículas Reactivas con Más Densidad
 const ReactiveParticlesBackground = ({ isDark = false }) => {
-  const [particles, setParticles] = useState([]);
-  const [mousePos, setMousePos] = useState({ x: -100, y: -100 });
-  const animationFrameRef = useRef();
   const canvasRef = useRef(null);
+  const animationFrameRef = useRef();
+  const particlesRef = useRef([]);
+  const mouseRef = useRef({ x: -100, y: -100 });
+  const [isVisible, setIsVisible] = useState(true);
 
-  // Inicializar partículas
+  // Más partículas para mayor densidad
   const initializeParticles = useCallback(() => {
     if (typeof window === "undefined") return [];
 
-    return Array.from({ length: 80 }, () => ({
+    const particleCount = Math.min(150, Math.floor((window.innerWidth * window.innerHeight) / 8000)); // Más partículas
+    
+    return Array.from({ length: particleCount }, () => ({
       x: Math.random() * window.innerWidth,
       y: Math.random() * window.innerHeight,
-      radius: Math.random() * 3 + 1,
+      radius: Math.random() * 2.5 + 0.8, // Variedad en tamaños
       color: getRandomColor(),
-      vx: (Math.random() - 0.5) * 0.5,
-      vy: (Math.random() - 0.5) * 0.5,
-      opacity: Math.random() * 0.5 + 0.3,
+      vx: (Math.random() - 0.5) * 0.8, // Más velocidad
+      vy: (Math.random() - 0.5) * 0.8,
+      opacity: Math.random() * 0.7 + 0.3,
+      pulsePhase: Math.random() * Math.PI * 2, // Para efecto de pulsación
+      originalRadius: 0
     }));
   }, []);
+
+  // Throttled mouse tracking
+  const handleMouseMove = useRef(
+    (() => {
+      let timeout;
+      return (e) => {
+        if (timeout) return;
+        timeout = setTimeout(() => {
+          mouseRef.current = { x: e.clientX, y: e.clientY };
+          timeout = null;
+        }, 16);
+      };
+    })()
+  ).current;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    setParticles(initializeParticles());
+    particlesRef.current = initializeParticles();
+    particlesRef.current.forEach(p => p.originalRadius = p.radius);
 
     const handleResize = () => {
-      setParticles(initializeParticles());
+      particlesRef.current = initializeParticles();
+      particlesRef.current.forEach(p => p.originalRadius = p.radius);
     };
 
-    const handleMouseMove = (e) => {
-      setMousePos({ x: e.clientX, y: e.clientY });
+    const handleVisibilityChange = () => {
+      setIsVisible(!document.hidden);
     };
 
     window.addEventListener("resize", handleResize);
-    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("mousemove", handleMouseMove);
-      cancelAnimationFrame(animationFrameRef.current);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
     };
   }, [initializeParticles]);
 
   useEffect(() => {
-    if (!canvasRef.current || typeof window === "undefined") return;
+    if (!canvasRef.current || typeof window === "undefined" || particlesRef.current.length === 0) return;
 
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { alpha: true });
+    let time = 0;
 
-    // Ajustar tamaño del canvas
     const handleResize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -62,92 +86,113 @@ const ReactiveParticlesBackground = ({ isDark = false }) => {
     handleResize();
     window.addEventListener("resize", handleResize);
 
-    // Función de animación
     const animate = () => {
+      if (!isVisible) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+        return;
+      }
+
+      time += 0.02;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Actualizar y dibujar partículas
-      setParticles((prevParticles) => {
-        const updatedParticles = prevParticles.map((particle) => {
-          // Calcular distancia al mouse
-          const dx = mousePos.x - particle.x;
-          const dy = mousePos.y - particle.y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
+      // Actualizar partículas
+      particlesRef.current.forEach((particle) => {
+        const dx = mouseRef.current.x - particle.x;
+        const dy = mouseRef.current.y - particle.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
 
-          // Actualizar velocidad basada en la posición del mouse
-          let vx = particle.vx;
-          let vy = particle.vy;
-
-          if (distance < 100) {
-            // Alejarse del mouse
-            const force = (100 - distance) / 100;
-            vx -= dx * force * 0.01;
-            vy -= dy * force * 0.01;
-          }
-
-          // Aplicar velocidad con límites
-          vx = Math.max(-1, Math.min(1, vx));
-          vy = Math.max(-1, Math.min(1, vy));
-
-          // Actualizar posición
-          let x = particle.x + vx;
-          let y = particle.y + vy;
-
-          // Mantener dentro de los límites
-          if (x < 0) x = canvas.width;
-          if (x > canvas.width) x = 0;
-          if (y < 0) y = canvas.height;
-          if (y > canvas.height) y = 0;
-
-          return {
-            ...particle,
-            x,
-            y,
-            vx: vx * 0.98, // Fricción
-            vy: vy * 0.98,
-          };
-        });
-
-        // Dibujar conexiones entre partículas cercanas
-        ctx.strokeStyle = isDark
-          ? "rgba(255, 255, 255, 0.15)"
-          : "rgba(100, 100, 255, 0.15)";
-        ctx.lineWidth = 0.5;
-
-        for (let i = 0; i < updatedParticles.length; i++) {
-          const p1 = updatedParticles[i];
-
-          for (let j = i + 1; j < updatedParticles.length; j++) {
-            const p2 = updatedParticles[j];
-            const dx = p1.x - p2.x;
-            const dy = p1.y - p2.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-
-            if (distance < 100) {
-              ctx.beginPath();
-              ctx.moveTo(p1.x, p1.y);
-              ctx.lineTo(p2.x, p2.y);
-              ctx.globalAlpha = ((100 - distance) / 100) * 0.8;
-              ctx.stroke();
-            }
-          }
+        // Interacción con el mouse más fuerte
+        if (distance < 120) {
+          const force = (120 - distance) / 120;
+          particle.vx -= dx * force * 0.015;
+          particle.vy -= dy * force * 0.015;
         }
 
-        // Dibujar partículas
-        updatedParticles.forEach((particle) => {
-          ctx.beginPath();
-          ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
-          ctx.fillStyle = getColorVariant(
-            particle.color,
-            isDark ? "400" : "500"
-          );
-          ctx.globalAlpha = particle.opacity;
-          ctx.fill();
-        });
+        // Límites de velocidad
+        particle.vx = Math.max(-2, Math.min(2, particle.vx));
+        particle.vy = Math.max(-2, Math.min(2, particle.vy));
 
-        return updatedParticles;
+        // Actualizar posición
+        particle.x += particle.vx;
+        particle.y += particle.vy;
+
+        // Rebote en bordes
+        if (particle.x < 0 || particle.x > canvas.width) {
+          particle.vx *= -0.8;
+          particle.x = Math.max(0, Math.min(canvas.width, particle.x));
+        }
+        if (particle.y < 0 || particle.y > canvas.height) {
+          particle.vy *= -0.8;
+          particle.y = Math.max(0, Math.min(canvas.height, particle.y));
+        }
+
+        // Fricción
+        particle.vx *= 0.995;
+        particle.vy *= 0.995;
+
+        // Efecto de pulsación
+        particle.pulsePhase += 0.05;
+        particle.radius = particle.originalRadius + Math.sin(particle.pulsePhase) * 0.5;
       });
 
+      // Dibujar conexiones más densas
+      ctx.strokeStyle = isDark
+        ? "rgba(255, 255, 255, 0.12)"
+        : "rgba(99, 102, 241, 0.15)";
+      ctx.lineWidth = 0.8;
+
+      for (let i = 0; i < particlesRef.current.length; i++) {
+        const p1 = particlesRef.current[i];
+        for (let j = i + 1; j < particlesRef.current.length; j++) {
+          const p2 = particlesRef.current[j];
+          const dx = p1.x - p2.x;
+          const dy = p1.y - p2.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          if (distance < 120) { // Mayor rango de conexión
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.globalAlpha = ((120 - distance) / 120) * 0.6;
+            ctx.stroke();
+          }
+        }
+      }
+
+      // Dibujar partículas con efectos mejorados
+      particlesRef.current.forEach((particle) => {
+        // Halo exterior
+        const gradient = ctx.createRadialGradient(
+          particle.x, particle.y, 0,
+          particle.x, particle.y, particle.radius * 3
+        );
+        
+        const colorVariant = getColorVariant(particle.color, isDark ? "400" : "500");
+        gradient.addColorStop(0, colorVariant.replace('rgb', 'rgba').replace(')', ', 0.4)'));
+        gradient.addColorStop(1, "transparent");
+        
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.radius * 3, 0, Math.PI * 2);
+        ctx.fillStyle = gradient;
+        ctx.globalAlpha = 0.3;
+        ctx.fill();
+
+        // Partícula principal
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+        ctx.fillStyle = colorVariant;
+        ctx.globalAlpha = particle.opacity;
+        ctx.fill();
+
+        // Núcleo brillante
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.radius * 0.4, 0, Math.PI * 2);
+        ctx.fillStyle = isDark ? "rgba(255, 255, 255, 0.8)" : "rgba(255, 255, 255, 0.9)";
+        ctx.globalAlpha = 0.6;
+        ctx.fill();
+      });
+
+      ctx.globalAlpha = 1;
       animationFrameRef.current = requestAnimationFrame(animate);
     };
 
@@ -155,9 +200,11 @@ const ReactiveParticlesBackground = ({ isDark = false }) => {
 
     return () => {
       window.removeEventListener("resize", handleResize);
-      cancelAnimationFrame(animationFrameRef.current);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
     };
-  }, [mousePos, isDark]);
+  }, [isDark, isVisible]);
 
   return (
     <BaseBackground
@@ -170,10 +217,10 @@ const ReactiveParticlesBackground = ({ isDark = false }) => {
     >
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 pointer-events-auto"
+        className="absolute inset-0 pointer-events-none"
       />
     </BaseBackground>
   );
 };
 
-export {ReactiveParticlesBackground};
+export { ReactiveParticlesBackground };

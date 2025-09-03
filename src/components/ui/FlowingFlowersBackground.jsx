@@ -53,8 +53,8 @@ const FlowingFlowersBackground = ({ isDark = false }) => {
 
     // Función para dibujar un pétalo
     const drawPetal = (ctx, type, size, color, secondaryColor, angle = 0) => {
-      // Asegurarse de que el tamaño sea siempre positivo
-      const safeSize = Math.max(0.1, size);
+      // Asegurar que el tamaño sea siempre positivo
+      const safeSize = Math.max(0.1, Math.abs(size));
       
       ctx.save();
       ctx.rotate(angle);
