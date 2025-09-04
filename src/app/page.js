@@ -10,7 +10,6 @@ export default function Home() {
     "Interactive Backgrounds": [
       { name: "Physics Rope", displayName: "Interactive Ropes" },
       { name: "Reactive Particles", displayName: "Reactive Particles" },
-      { name: "Fluid Waves", displayName: "Fluid Waves" },
       { name: "Node Network", displayName: "Network Physics" },
       { name: "Orbital Particles", displayName: "Solar System" },
       { name: "Interactive Shapes", displayName: "Interactive Shapes" },
@@ -52,8 +51,6 @@ export default function Home() {
             return <InteractiveBg.PhysicsRopeBackground />;
           case "Reactive Particles":
             return <InteractiveBg.ReactiveParticlesBackground />;
-          case "Fluid Waves":
-            return <InteractiveBg.FluidWavesBackground />;
           case "Node Network":
             return <InteractiveBg.NetworkNodesBackground />;
           case "Orbital Particles":
