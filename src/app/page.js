@@ -13,6 +13,7 @@ export default function Home() {
       { name: "Fluid Waves", displayName: "Fluid Waves" },
       { name: "Node Network", displayName: "Network Physics" },
       { name: "Orbital Particles", displayName: "Solar System" },
+      { name: "Interactive Shapes", displayName: "Interactive Shapes" },
       { name: "Aurora", displayName: "Aurora" },
       { name: "Water Drop Lens", displayName: "Water Drop Lens" },
     ],
@@ -21,6 +22,8 @@ export default function Home() {
       { name: "Blurry Waves", displayName: "Blurry Waves" },
       { name: "Pulsating Circles", displayName: "Pulsating Circles" },
       { name: "Starry Night", displayName: "Starry Night" },
+      { name: "Minimal Circles", displayName: "Minimal Circles" },
+      { name: "Deformable Shapes", displayName: "Deformable Shapes" },
       { name: "Perlin Noise", displayName: "Organic Patterns" },
       { name: "Constellations", displayName: "Stellar Constellations" },
       { name: "Interactive Fluid", displayName: "Liquid Background" },
@@ -67,6 +70,10 @@ export default function Home() {
             return <InteractiveBg.PerlinNoiseBackground />;
           case "Constellations":
             return <InteractiveBg.ConstellationsBackground />;
+          case "Deformable Shapes":
+            return <InteractiveBg.DeformableShapesBackground />;
+          case "Interactive Shapes":
+            return <InteractiveBg.InteractiveShapesBackground />;
           case "Interactive Fluid":
             return <InteractiveBg.LiquidBackground />;
           case "Elastic Logo":
@@ -75,6 +82,8 @@ export default function Home() {
             return <InteractiveBg.AuroraBackground />;
           case "Blurry Particles":
             return <InteractiveBg.BlurryParticlesBackground />;
+          case "Minimal Circles":
+            return <InteractiveBg.MinimalCirclesBackground />;
           default:
             return <InteractiveBg.ElasticLogoBackground />;
         }

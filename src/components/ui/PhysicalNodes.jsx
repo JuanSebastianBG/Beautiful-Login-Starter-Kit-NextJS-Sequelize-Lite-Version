@@ -10,12 +10,12 @@ const NetworkNodesBackground = ({ isDark = false }) => {
   const lastMouseUpdateRef = useRef(0);
   const isVisibleRef = useRef(true);
 
-  // Inicializar nodos con más cantidad
+  // Inicializar nodos con menos cantidad
   const initializeNodes = useCallback(() => {
     if (typeof window === "undefined") return [];
 
-    // Aumentamos la cantidad de nodos
-    const nodeCount = Math.min(60, Math.floor((window.innerWidth * window.innerHeight) / 15000));
+    // Reducimos significativamente la cantidad de nodos
+    const nodeCount = Math.min(25, Math.floor((window.innerWidth * window.innerHeight) / 25000));
     const nodes = [];
 
     for (let i = 0; i < nodeCount; i++) {

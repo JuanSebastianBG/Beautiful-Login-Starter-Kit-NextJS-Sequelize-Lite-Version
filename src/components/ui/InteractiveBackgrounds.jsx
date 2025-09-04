@@ -14,6 +14,10 @@ import { BlurryParticlesBackground } from './BlurryParticlesBackground';
 import { BlurryWavesBackground } from './BlurryWavesBackground';
 import { WaterDropLensBackground } from './WaterDropLensBackground'; 
 import { StarryNightBackground } from './StarryNightBackground';
+import { MinimalCirclesBackground } from './MinimalCirclesBackground';
+import { DeformableShapesBackground } from './DeformableShapesBackground';
+import { InteractiveShapesBackground } from './InteractiveShapesBackground'; 
+
 // Exportar todos los componentes
 export {
   BlurryParticlesBackground,  
@@ -21,6 +25,9 @@ export {
   PhysicsRopeBackground,
   ReactiveParticlesBackground,
   FluidWavesBackground,
+  MinimalCirclesBackground, 
+  DeformableShapesBackground,
+  InteractiveShapesBackground,
   NetworkNodesBackground,
   OrbitalParticlesBackground,
   PulsatingCirclesBackground,
@@ -40,11 +47,14 @@ export default {
   PhysicsRopeBackground,
   ReactiveParticlesBackground,
   FluidWavesBackground,
+  MinimalCirclesBackground, 
+  DeformableShapesBackground,
   NetworkNodesBackground,
   OrbitalParticlesBackground,
   PulsatingCirclesBackground,
   PerlinNoiseBackground,
   ConstellationsBackground,
+  InteractiveShapesBackground,
   LiquidBackground,
   StarryNightBackground,
   ElasticLogoBackground,

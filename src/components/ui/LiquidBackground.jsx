@@ -38,7 +38,7 @@ const LiquidBackground = ({ isDark = true, children }) => {
     cursor: 'rgba(59,130,246,0.8)'
   };
 
-  // Función para manejar movimiento del mouse
+  // Función para manejar movimiento del mouse - OPTIMIZADA
   const handleMouseMove = useCallback((e) => {
     if (!containerRef.current) return;
     
@@ -47,28 +47,30 @@ const LiquidBackground = ({ isDark = true, children }) => {
     const y = e.clientY - rect.top;
     
     setMousePos({ x, y });
-    setIsMoving(true);
     
-    // Crear gota ocasionalmente
-    if (Math.random() < 0.15) {
+    if (!isMoving) {
+      setIsMoving(true);
+    }
+    
+    // Crear gota ocasionalmente (reducir frecuencia para mejor performance)
+    if (Math.random() < 0.08) {
       const newDroplet = {
         id: Date.now() + Math.random(),
         x: (x / rect.width) * 100,
         y: (y / rect.height) * 100,
-        size: Math.random() * 8 + 4,
-        opacity: 0.6,
+        size: Math.random() * 6 + 3,
+        opacity: 0.5,
         life: 0
       };
       
-      setDroplets(prev => [...prev.slice(-4), newDroplet]);
+      setDroplets(prev => [...prev.slice(-3), newDroplet]);
     }
     
-    // Resetear estado de movimiento después de un tiempo
     clearTimeout(moveTimeoutRef.current);
     moveTimeoutRef.current = setTimeout(() => {
       setIsMoving(false);
-    }, 150);
-  }, []);
+    }, 100);
+  }, [isMoving]);
 
   // Crear ondas de fondo suaves
   const drawBackgroundWaves = useCallback((ctx, canvas) => {
@@ -265,20 +267,21 @@ const LiquidBackground = ({ isDark = true, children }) => {
         />
       </div>
 
-      {/* Mouse Tracker optimizado */}
+      {/* Mouse Tracker optimizado - SIN LAG */}
       <div
         className="fixed pointer-events-none z-50"
         style={{
-          marginLeft: `${mousePos.x - 15}px`,
-          marginTop: `${mousePos.y - 15}px`,
+          left: `${mousePos.x - 15}px`,
+          top: `${mousePos.y - 15}px`,
           width: '30px',
           height: '30px',
           background: 'radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.7) 40%, rgba(255,255,255,0.2) 70%, transparent 100%)',
           borderRadius: '50%',
-          transition: isMoving ? 'margin 0.08s cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'margin 0.3s cubic-bezier(0.23, 1, 0.320, 1)',
+          transition: isMoving ? 'none' : 'transform 0.2s ease-out',
           filter: 'blur(0.5px)',
           boxShadow: '0 0 20px rgba(255,255,255,0.3), 0 0 40px rgba(255,255,255,0.1)',
           transform: isMoving ? 'scale(1.2)' : 'scale(1)',
+          willChange: 'transform, left, top'
         }}
       />
 
