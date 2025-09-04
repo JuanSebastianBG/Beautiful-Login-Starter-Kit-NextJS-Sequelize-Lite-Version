@@ -1,7 +1,6 @@
 // Archivo índice para todos los backgrounds interactivos
 import { PhysicsRopeBackground } from './InteractiveRopes';
 import { ReactiveParticlesBackground } from './ReactivePerticles';
-import { FluidWavesBackground } from './FluidWaves';
 import { NetworkNodesBackground } from './PhysicalNodes';
 import { OrbitalParticlesBackground } from './SolarSystem';
 import { PulsatingCirclesBackground } from './CirclesPoint';
